@@ -9,6 +9,8 @@ import { shikiTheme } from "./store/themes";
 import Frame from "./components/Frame";
 import Controls from "./components/Controls";
 import FrameContextStore from "./store/FrameContextStore";
+import MarkdownWorkspace from "./components/MarkdownWorkspace";
+import { contentTypeAtom } from "./store/content";
 
 import styles from "./code.module.css";
 import NoSSR from "./components/NoSSR";
@@ -25,6 +27,7 @@ import FormatButton from "./components/FormatCodeButton";
 
 export function Code() {
   const [highlighter, setHighlighter] = useAtom(highlighterAtom);
+  const [contentType] = useAtom(contentTypeAtom);
 
   useEffect(() => {
     getHighlighterCore({
@@ -46,7 +49,9 @@ export function Code() {
         </NavigationActions>
         <div className={styles.app}>
           <NoSSR>
-            {highlighter && <Frame />}
+            {/* Markdown hosts its own layout because the source pane has to sit
+                outside `#frame`, which is the export boundary. */}
+            {highlighter && (contentType === "markdown" ? <MarkdownWorkspace /> : <Frame />)}
             <Controls />
           </NoSSR>
         </div>

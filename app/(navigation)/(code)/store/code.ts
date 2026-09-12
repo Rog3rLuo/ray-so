@@ -3,6 +3,7 @@ import { Base64 } from "js-base64";
 import hljs from "highlight.js";
 import { atomWithHash } from "jotai-location";
 import { LANGUAGES, Language } from "../util/languages";
+import { contentTypeAtom } from "./content";
 
 type CodeSample = {
   language: Language;
@@ -146,6 +147,10 @@ export const codeAtom = atom(
 
     searchParams.set("code", Base64.encodeURI(newCode));
     window.location.hash = `#${searchParams.toString()}`;
+
+    // Language auto-detection is a full highlight.js pass; in markdown mode it
+    // would re-run on every keystroke for a result nothing reads.
+    if (get(contentTypeAtom) === "markdown") return;
 
     detectLanguage(newCode).then((language) => {
       if (LANGUAGES[language]) {

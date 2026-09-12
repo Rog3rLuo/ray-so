@@ -18,6 +18,7 @@ import usePngClipboardSupported from "../util/usePngClipboardSupported";
 import { useAtom, useAtomValue } from "jotai";
 import { EXPORT_SIZE_OPTIONS, SIZE_LABELS, exportSizeAtom } from "../store/image";
 import { autoDetectLanguageAtom, selectedLanguageAtom } from "../store/code";
+import { contentTypeAtom } from "../store/content";
 import { LANGUAGES } from "../util/languages";
 import { ButtonGroup } from "@/components/button-group";
 import { Button } from "@/components/button";
@@ -47,6 +48,7 @@ const ExportButton: React.FC = () => {
   const [exportSize, setExportSize] = useAtom(exportSizeAtom);
   const selectedLanguage = useAtomValue(selectedLanguageAtom);
   const autoDetectLanguage = useAtomValue(autoDetectLanguageAtom);
+  const contentType = useAtomValue(contentTypeAtom);
 
   const savePng = async () => {
     if (!frameContext?.current) {
@@ -55,6 +57,12 @@ const ExportButton: React.FC = () => {
 
     setFlashMessage({ icon: <ImageIcon />, message: "Exporting PNG" });
 
+    // Justified paragraphs already carry the KP layout from the unified
+    // preview renderer. Late web fonts would still render the capture with
+    // fallback glyphs — wait for them once.
+    if (typeof document !== "undefined" && "fonts" in document) {
+      await document.fonts.ready;
+    }
     const dataUrl = await toPng(frameContext.current, {
       pixelRatio: exportSize,
     });
@@ -118,11 +126,17 @@ const ExportButton: React.FC = () => {
       background: params.get("background") || "true",
       darkMode: params.get("darkMode") || "true",
       padding: params.get("padding") || "64",
-      language: Object.keys(LANGUAGES).find((key) => LANGUAGES[key].name === selectedLanguage?.name) || "auto",
-      autoDetectLanguage: autoDetectLanguage.toString(),
+      // Language is only meaningful for code; markdown exports report "markdown"
+      // rather than the leftover auto-detected language.
+      language:
+        contentType === "markdown"
+          ? "markdown"
+          : Object.keys(LANGUAGES).find((key) => LANGUAGES[key].name === selectedLanguage?.name) || "auto",
+      autoDetectLanguage: contentType === "markdown" ? "false" : autoDetectLanguage.toString(),
       title: params.get("title") || "untitled",
       width: params.get("width") || "auto",
       size: SIZE_LABELS[exportSize],
+      contentType,
     });
     savePng();
   };

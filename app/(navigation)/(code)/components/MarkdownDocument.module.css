@@ -1,0 +1,28 @@
+/*
+ * Surface for the rendered markdown inside the export frame.
+ *
+ * `.window` in DefaultFrame.module.css is a flex column with a 24px header, so
+ * the document only has to fill the width and own its own padding. Height stays
+ * content-driven so the exported image is exactly as tall as the document.
+ */
+
+.document {
+  width: 100%;
+  min-height: 0;
+  padding: 24px 28px 28px;
+  background-color: transparent;
+  /* Query container for the auto-ragged breakpoint: the document is the text
+     column, so its inline size is what "narrower than N" means (Telari's
+     prefs.autoRagged triggers on the body column width). */
+  container-type: inline-size;
+}
+
+.document > :global(.markdown) {
+  max-width: 100%;
+}
+
+@media (max-width: 767px) {
+  .document {
+    padding: 16px 18px 20px;
+  }
+}

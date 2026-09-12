@@ -73,6 +73,17 @@ type ShikiSyntaxObject = {
   highlightHover?: string;
   diffDeleted?: string;
   diffInserted?: string;
+  /* Document-level tokens used by the markdown renderer. Optional: themes that
+     omit them fall back to derived values in CSS (see Markdown.module.css), so
+     the existing theme catalog keeps working untouched. */
+  heading?: string;
+  muted?: string;
+  border?: string;
+  codeBackground?: string;
+  codeInlineBackground?: string;
+  tableHeaderBackground?: string;
+  quoteBorder?: string;
+  quoteBackground?: string;
 };
 
 function convertToShikiTheme(syntaxObject: ShikiSyntaxObject): CSSProperties {
@@ -99,6 +110,16 @@ function convertToShikiTheme(syntaxObject: ShikiSyntaxObject): CSSProperties {
     "--ray-token-diff-deleted": syntaxObject.diffDeleted,
     "--ray-token-diff-inserted": syntaxObject.diffInserted,
     "--ray-token-object-literal": syntaxObject.objectLiteral,
+    /* Document tokens. `undefined` values are dropped by React, which lets the
+       stylesheet's `var(--ray-x, fallback)` chain derive them per theme. */
+    "--ray-heading": syntaxObject.heading,
+    "--ray-muted": syntaxObject.muted,
+    "--ray-border": syntaxObject.border,
+    "--ray-code-background": syntaxObject.codeBackground,
+    "--ray-code-inline-background": syntaxObject.codeInlineBackground,
+    "--ray-table-header-background": syntaxObject.tableHeaderBackground,
+    "--ray-quote-border": syntaxObject.quoteBorder,
+    "--ray-quote-background": syntaxObject.quoteBackground,
   } as CSSProperties;
 }
 

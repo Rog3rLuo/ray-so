@@ -24,6 +24,8 @@ import classNames from "classnames";
 import { derivedFlashMessageAtom } from "../store/flash";
 import { highlightedLinesAtom, showLineNumbersAtom } from "../store";
 import { LANGUAGES } from "../util/languages";
+import { contentTypeAtom } from "../store/content";
+import MarkdownDocument from "./MarkdownDocument";
 
 function indentText(text: string) {
   return text
@@ -130,7 +132,7 @@ const fontMap = {
   "google-sans-code": styles.googleSansCode,
 } as const;
 
-function Editor() {
+function CodeEditor() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [code, setCode] = useAtom(codeAtom);
   const [selectedLanguage, setSelectedLanguage] = useAtom(selectedLanguageAtom);
@@ -284,6 +286,23 @@ function Editor() {
       <HighlightedCode code={code} selectedLanguage={selectedLanguage} />
     </div>
   );
+}
+
+/**
+ * Content dispatcher.
+ *
+ * Every one of the 19 frames renders `<Editor />` directly, so switching on the
+ * content type here is what lets markdown reuse all of them — frames, themes,
+ * padding, backgrounds and the export button — without touching any frame.
+ */
+function Editor() {
+  const [contentType] = useAtom(contentTypeAtom);
+
+  if (contentType === "markdown") {
+    return <MarkdownDocument />;
+  }
+
+  return <CodeEditor />;
 }
 
 export default Editor;

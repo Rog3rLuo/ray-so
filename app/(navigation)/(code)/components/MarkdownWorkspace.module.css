@@ -1,0 +1,70 @@
+/*
+ * Markdown editing workspace.
+ *
+ * `.workspace` takes the `content` grid area that `Frame.module.css`
+ * `.frameContainer` normally occupies, so the split view sits inside the same
+ * `.app` grid and keeps the existing top row / footer / fixed Controls bar.
+ */
+
+.workspace {
+  display: grid;
+  width: 100%;
+  align-items: start;
+  justify-items: stretch;
+  padding: 0 24px;
+  gap: 24px;
+  grid-area: content;
+  grid-template-columns: minmax(260px, 380px) minmax(0, 1fr);
+}
+
+.previewOnly {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/*
+ * Kept mounted in preview mode (see MarkdownWorkspace). `visibility` rather
+ * than `display`: Blink discards a hidden editable's native undo stack when it
+ * leaves the render tree entirely, and this keeps undo history across a
+ * preview round-trip. Absolute positioning takes it out of the grid flow so
+ * the collapsed single-column layout is unaffected; the two-class selector
+ * outranks `.source`'s `position: sticky`.
+ */
+.workspace .sourceHidden {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/*
+ * Sticky so the source stays reachable while a long document scrolls past it.
+ * The height reserves the fixed navigation bar above and the Controls bar plus
+ * footer below.
+ */
+.source {
+  position: sticky;
+  top: 74px;
+  width: 100%;
+  height: calc(100vh - 200px);
+  min-height: 300px;
+}
+
+.preview {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+}
+
+/* Below md the two panes cannot coexist; stack them and let the page scroll. */
+@media (max-width: 1023px) {
+  .workspace {
+    padding: 0 16px;
+    gap: 16px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .source {
+    position: static;
+    height: 260px;
+  }
+}

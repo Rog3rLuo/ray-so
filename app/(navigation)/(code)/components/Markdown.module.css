@@ -1,0 +1,520 @@
+/*
+ * Document styles for the markdown renderer.
+ *
+ * Every colour is derived from the existing `--ray-*` theme variables, so the
+ * renderer inherits all 36 themes without editing a single one. The optional
+ * document tokens added to `convertToShikiTheme` are consumed through
+ * `var(--ray-x, <derived fallback>)`: when a theme omits them React drops the
+ * inline custom property and the fallback (usually a `color-mix` of the theme
+ * foreground) takes over.
+ */
+
+.markdown {
+  /* Latin and Han faces are independent: the composed font-family lists the
+     Latin stack first and the Han stack second, and CSS per-glyph matching
+     pairs any Latin face with any Han face in mixed text. `--md-latin` is set
+     by the fontSans/fontSerif/fontMono classes, `--md-han` by the hanHei/
+     hanSong/hanKai classes. The Latin stacks deliberately exclude generic
+     aliases (ui-sans-serif, system-ui, monospace): they carry CJK glyphs and
+     would shadow the Han choice. The trailing generics catch leftovers. */
+  --md-latin: Inter, "Helvetica Neue", Arial;
+  --md-han: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC";
+  --md-font-family: var(--md-latin), var(--md-han), ui-sans-serif, system-ui, sans-serif;
+  --md-mono-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --md-text: var(--ray-foreground);
+  --md-heading: var(--ray-heading, var(--ray-foreground));
+  --md-muted: var(--ray-muted, color-mix(in oklab, var(--ray-foreground) 55%, transparent));
+  --md-border: var(--ray-border, color-mix(in oklab, var(--ray-foreground) 18%, transparent));
+  --md-border-strong: color-mix(in oklab, var(--ray-foreground) 30%, transparent);
+  --md-code-bg: var(--ray-code-background, color-mix(in oklab, var(--ray-foreground) 8%, transparent));
+  --md-code-inline-bg: var(--ray-code-inline-background, color-mix(in oklab, var(--ray-foreground) 12%, transparent));
+  --md-table-head-bg: var(--ray-table-header-background, color-mix(in oklab, var(--ray-foreground) 7%, transparent));
+  --md-quote-border: var(--ray-quote-border, color-mix(in oklab, var(--ray-foreground) 28%, transparent));
+  --md-quote-bg: var(--ray-quote-background, color-mix(in oklab, var(--ray-foreground) 4%, transparent));
+  --md-link: var(--ray-token-link, var(--ray-token-keyword, #28aaf1));
+  --md-rule: var(--ray-border, color-mix(in oklab, var(--ray-foreground) 16%, transparent));
+
+  color: var(--md-text);
+  font-family: var(--md-font-family);
+  font-size: var(--md-font-size, 15px);
+  line-height: var(--md-leading, 1.7);
+  /* Justified body text is the default (`.justify` below); headings and code
+     keep start alignment. Browser justification is greedy — it cannot match
+     Telari's Knuth–Plass breaking — so hyphenation below does the heavy
+     lifting for Latin runs, and `line-break: strict` + `text-spacing-trim`
+     keep the CJK side from degrading. */
+  text-align: start;
+  overflow-wrap: break-word;
+  word-break: normal;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Two-end alignment for body text (paragraphs, list items, blockquotes).
+ * `hyphens: auto` gives Latin words a legal break point, which is what keeps
+ * greedy justification from opening wide gaps; inline code opts back out
+ * because hyphenated identifiers are worse than a loose line.
+ */
+.justify .paragraph,
+.justify .listItem {
+  text-align: justify;
+  hyphens: auto;
+}
+
+.justify .inlineCode {
+  hyphens: manual;
+}
+
+/*
+ * Auto-ragged (Telari prefs.autoRagged): in a column narrower than ~21 body
+ * characters, justified spacing is all stretch and no substance, so the whole
+ * document falls back to start alignment until the column widens again.
+ */
+@container (max-width: 320px) {
+  .justify .paragraph,
+  .justify .listItem {
+    text-align: start;
+  }
+}
+
+/*
+ * Code-heavy paragraphs (Telari prefs.raggedCode): when inline code dominates
+ * a paragraph, justified spacing collects in the few stretchy gaps around the
+ * chips and looks broken. The density class is set from MarkdownPreview's
+ * post-render pass; this must stay after the `.justify` rules to win the tie.
+ */
+.paragraph.codeHeavy,
+.listItem.codeHeavy {
+  text-align: start;
+}
+
+/* ---------------------------------------------------------------- body font */
+
+/* Latin faces only: CJK comes from the Han stack further down the list. */
+
+.fontSans {
+  --md-latin: Inter, "Helvetica Neue", Arial, "Segoe UI", Roboto;
+}
+
+.fontSerif {
+  --md-latin: Georgia, "Times New Roman";
+}
+
+.fontMono {
+  --md-latin: var(--md-mono-family);
+}
+
+/* Han faces (Telari prefs.fonts.han): the last CJK-capable stop before the
+   generic fallback, so Latin never lands here and Han always does. */
+
+.hanHei {
+  --md-han: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC";
+}
+
+.hanSong {
+  --md-han: "Songti SC", "SimSun", "Noto Serif CJK SC";
+}
+
+.hanKai {
+  --md-han: "Kaiti SC", "STKaiti", KaiTi, "楷体";
+}
+
+/*
+ * Browser-level CJK typography only. `line-break: strict` refuses breaks before
+ * closing punctuation, `text-spacing-trim` collapses the redundant space between
+ * adjacent CJK punctuation, and `text-autospace` inserts the (correct) thin gap
+ * between CJK and Latin runs. Unsupported browsers simply ignore the last two.
+ * `hanging-punctuation` (Safari) lets line-final CJK punctuation hang into the
+ * margin, which is the cheap CSS cousin of Telari's `punct_folds` squeezing.
+ */
+.cjk {
+  line-break: strict;
+  text-spacing-trim: space-first;
+  text-autospace: normal;
+  hanging-punctuation: first allow-end;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.cjk :global(.katex) {
+  text-autospace: no-autospace;
+}
+
+/* --------------------------------------------------------------- structure */
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.heading {
+  color: var(--md-heading);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.011em;
+  margin: 1.6em 0 0.6em;
+  text-wrap: balance;
+}
+
+.h1 {
+  font-size: 1.85em;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  margin-top: 1.2em;
+}
+
+.h2 {
+  font-size: 1.45em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--md-border);
+}
+
+.h3 {
+  font-size: 1.2em;
+}
+
+.h4 {
+  font-size: 1.05em;
+}
+
+.h5 {
+  font-size: 1em;
+}
+
+.h6 {
+  font-size: 0.9em;
+  color: var(--md-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.paragraph {
+  margin: 0 0 1em;
+  /* The browser's one step toward paragraph-level line breaking: avoids short
+     last lines and lone words where a lookahead can. Ragged right stays, but
+     the rag improves at every font size and measure. */
+  text-wrap: pretty;
+}
+
+.paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.strong {
+  font-weight: 600;
+  color: var(--md-heading);
+}
+
+/*
+ * CJK emphasis faces, following Telari's prefs.fonts.cjkStrongFace/cjkItalicFace.
+ *
+ * Italic: Chinese faces have no italic cuts, so browsers fake one with an
+ * oblique shear — the classic CJK typography sin. Kaiti takes over the Han
+ * glyphs (per-glyph font matching: Latin stays in the Latin slot first), and
+ * `font-synthesis: none` stops the fake slant, so Han stays upright while
+ * Latin words keep their true italics.
+ *
+ * Bold on song/kai bodies: 宋体正文·黑体强调 — Han glyphs switch to the heiti
+ * line while Latin keeps its own bold. Hei bodies already have a natural bold
+ * face and stay weight-based.
+ */
+.emphasis {
+  font-style: italic;
+}
+
+.cjk .emphasis {
+  font-family: var(--md-latin), "Kaiti SC", "STKaiti", KaiTi, "楷体", serif;
+  font-synthesis: none;
+}
+
+.hanSong .strong,
+.hanKai .strong {
+  font-family: var(--md-latin), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+.link {
+  color: var(--md-link);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in oklab, var(--md-link) 40%, transparent);
+  transition: text-decoration-color 120ms ease;
+
+  &:hover {
+    text-decoration-color: var(--md-link);
+  }
+}
+
+.hr {
+  height: 1px;
+  margin: 1.8em 0;
+  border: 0;
+  background-color: var(--md-rule);
+}
+
+/* ------------------------------------------------------------------- lists */
+
+.list {
+  margin: 0 0 1em;
+  padding-inline-start: 1.6em;
+
+  & & {
+    margin-bottom: 0;
+    margin-top: 0.25em;
+  }
+}
+
+.listItem {
+  margin: 0.3em 0;
+
+  & > .paragraph {
+    margin-bottom: 0.5em;
+  }
+}
+
+/* GFM task lists: rehype emits a disabled checkbox inside the item. */
+.taskListItem {
+  list-style: none;
+  margin-inline-start: -1.35em;
+}
+
+.taskCheckbox {
+  width: 0.95em;
+  height: 0.95em;
+  margin: 0 0.45em 0.15em 0;
+  vertical-align: middle;
+  accent-color: var(--md-link);
+}
+
+/* -------------------------------------------------------------- blockquote */
+
+.quote {
+  margin: 1.2em 0;
+  padding: 0.7em 1.1em;
+  border-inline-start: 3px solid var(--md-quote-border);
+  border-radius: 0 8px 8px 0;
+  background-color: var(--md-quote-bg);
+  color: var(--md-muted);
+
+  & > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* --------------------------------------------------------------- code (inline) */
+
+.inlineCode {
+  font-family: var(--md-mono-family);
+  font-size: calc(0.875em * var(--md-code-scale, 1));
+  padding: 0.15em 0.4em;
+  border-radius: 5px;
+  background-color: var(--md-code-inline-bg);
+  color: var(--ray-token-string, var(--md-text));
+  white-space: break-spaces;
+}
+
+/* --------------------------------------------------------------- code (block) */
+
+.codeBlock {
+  position: relative;
+  margin: 1.2em 0;
+  border-radius: 10px;
+  background-color: var(--md-code-bg);
+  border: 1px solid var(--md-border);
+  overflow: hidden;
+}
+
+.codeBlockHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--md-border);
+  color: var(--md-muted);
+  font-family: var(--md-mono-family);
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+}
+
+.codeBlockLang {
+  text-transform: lowercase;
+}
+
+.codeBlockBody {
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+
+.codeBlockBody > :global(pre) {
+  margin: 0;
+  font-family: var(--md-mono-family);
+  font-size: calc(0.85em * var(--md-code-scale, 1));
+  line-height: 1.55;
+  tab-size: 2;
+  background-color: transparent !important;
+}
+
+/* shiki's css-variables theme emits `background-color: var(--ray-background)`,
+   which no theme defines; force it transparent so the block owns its surface. */
+.markdown :global(.shiki) {
+  background-color: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.codeFallback {
+  font-family: var(--md-mono-family);
+  font-size: calc(0.85em * var(--md-code-scale, 1));
+  line-height: 1.55;
+  white-space: pre;
+  color: var(--md-text);
+}
+
+/* ------------------------------------------------------------------ tables */
+
+.tableScroll {
+  margin: 1.2em 0;
+  overflow-x: auto;
+  border: 1px solid var(--md-border);
+  border-radius: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95em;
+
+  & th,
+  & td {
+    padding: 0.5em 0.85em;
+    border-bottom: 1px solid var(--md-border);
+    text-align: start;
+  }
+
+  & th {
+    background-color: var(--md-table-head-bg);
+    color: var(--md-heading);
+    font-weight: 600;
+  }
+
+  & tr:last-child td {
+    border-bottom: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ images */
+
+.image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.2em auto;
+  border-radius: 8px;
+}
+
+.imagePlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 1.2em auto;
+  padding: 1.5em;
+  border: 1px dashed var(--md-border-strong);
+  border-radius: 8px;
+  background-color: color-mix(in oklab, var(--ray-foreground) 4%, transparent);
+  color: var(--md-muted);
+  font-size: 0.85em;
+}
+
+/* ------------------------------------------------------------------- kbd */
+
+.kbd {
+  font-family: var(--md-mono-family);
+  font-size: 0.8em;
+  padding: 0.15em 0.45em;
+  border: 1px solid var(--md-border-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background-color: var(--md-code-inline-bg);
+  color: var(--md-text);
+}
+
+/* ------------------------------------------------------------------ math */
+
+.markdown :global(.katex) {
+  font-size: 1.05em;
+}
+
+.markdown :global(.katex-display) {
+  margin: 1.2em 0;
+  padding: 2px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.markdown :global(.katex-display > .katex) {
+  white-space: normal;
+}
+
+.markdown :global(.katex-error) {
+  color: #e5484d;
+  font-family: var(--md-mono-family);
+  font-size: 0.85em;
+}
+
+/* ---------------------------------------------------------------- diagrams */
+
+.mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 1.2em 0;
+  padding: 12px;
+  border-radius: 10px;
+  background-color: var(--md-code-bg);
+  border: 1px solid var(--md-border);
+  overflow-x: auto;
+
+  /*
+   * Mermaid emits `<svg width="100%" style="max-width: <natural>px">` with no
+   * height attribute. That percentage *attribute* collapses to the replaced
+   * element default (16px) inside a flex container, so the diagram has to be
+   * sized with a real CSS width; the inline max-width still caps it at the
+   * diagram's natural size, so small diagrams are not stretched.
+   */
+  & :global(svg) {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+.mermaidError {
+  margin: 1.2em 0;
+  padding: 0.8em 1em;
+  border: 1px solid color-mix(in oklab, #e5484d 40%, transparent);
+  border-radius: 10px;
+  background-color: color-mix(in oklab, #e5484d 10%, transparent);
+  color: #e5484d;
+  font-family: var(--md-mono-family);
+  font-size: 0.8em;
+  white-space: pre-wrap;
+}
+
+/* --------------------------------------------------------------- footnotes */
+
+.footnotes {
+  margin-top: 2em;
+  padding-top: 1em;
+  border-top: 1px solid var(--md-border);
+  color: var(--md-muted);
+  font-size: 0.9em;
+}
